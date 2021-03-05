@@ -1,0 +1,39 @@
+[extension_name]
+Get Channel Language
+[insert_external]
+<div>
+  <p>Get Channel Language is installed</p>
+</div>
+[insert_command]
+lioranboardclient.send('{"type": "MESSAGE", "topic": "ExtensionCommand",	"name": "Get Channel Language",	"boxcount": 3,"boxname1":"oauthToken","boxtype1":"string","boxname2": "channelId", "boxtype2": "string", "boxname3": "responseVariable", "boxtype3": "string"}');
+[insert_hook]
+case "GetChannelLanguage":{
+	GetChannelLanguage(LioranBoardJSON.oauthToken, LioranBoardJSON.channelId, LioranBoardJSON.responseVariable);
+} break
+[insert_script]
+async function GetChannelLanguage(oauthToken, channelId, responseVariable) {
+  const response = await fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${channelId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${oauthToken}`,
+      'Client-Id': TWITCH_CLIENT_ID,
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    let lang = data.data[0].broadcaster_language;
+    if (typeof lang === 'string') {
+      lioranboardclient.send(`{"type":"MESSAGE","topic":"SetValue","valuename":"${responseVariable}","value":"${lang}","real":false}`);
+    }
+    else {
+      lioranboardclient.send(`{"type":"MESSAGE","topic":"SetValue","valuename":"${responseVariable}","value":"0","real":false}`);
+    }
+  })
+  .catch((error) => {
+    lioranboardclient.send(`{"type":"MESSAGE","topic":"AlertMessage","message":"Could not fetch channel language: ${error.toString()}"}`);
+    lioranboardclient.send(`{"type":"MESSAGE","topic":"SetValue","valuename":"${responseVariable}","value":"0","real":false}`);
+  });
+  return 1;
+}
+
+[insert_over]
